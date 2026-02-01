@@ -1,0 +1,72 @@
+/* CSS 변수로 테마 설정 */
+:root {
+  --color-bg: #f8fafc;
+  --color-text: #1e293b;
+  --color-accent: #3b82f6;
+  --color-border: #e2e8f0;
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+#app {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+header {
+  text-align: center;
+  padding: 3rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+header h1 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: var(--color-accent);
+}
+
+header p {
+  color: #64748b;
+}
+
+main {
+  padding: 2rem 0;
+}
+
+section {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+section h2 {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+section p {
+  margin-bottom: 0.75rem;
+}
+
+footer {
+  text-align: center;
+  padding: 2rem;
+  color: #64748b;
+  font-size: 0.875rem;
+  border-top: 1px solid var(--color-border);
+}
