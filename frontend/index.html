@@ -3,26 +3,221 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Website</title>
+    <title>메이플 TODO</title>
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
     <div id="app">
-      <header>
-        <h1>환영합니다</h1>
-        <p>웹사이트에 오신 것을 환영합니다.</p>
-      </header>
-      <main>
-        <section>
-          <h2>시작하기</h2>
-          <p>이 프로젝트는 Vite를 사용한 기본 웹사이트 템플릿입니다.</p>
-          <p>수정하고 원하는 대로 꾸며 보세요.</p>
-        </section>
-      </main>
-      <footer>
-        <p>© 2025 My Website</p>
-      </footer>
+      <aside class="sidebar">
+        <div class="sidebar-logo">
+          <span class="logo-icon">M</span>
+          <span class="logo-text">메이플 TODO</span>
+        </div>
+        <nav class="sidebar-nav">
+          <span class="nav-label">MENU</span>
+          <a href="#" class="nav-item active" data-page="dashboard">
+            <span class="nav-icon">▣</span>
+            Dashboard
+          </a>
+          <a href="#" class="nav-item" data-page="records">
+            <span class="nav-icon">≡</span>
+            수입/지출
+            <span class="badge" id="records-badge">0</span>
+          </a>
+          <a href="#" class="nav-item" data-page="contents">
+            <span class="nav-icon">◇</span>
+            메포 컨텐츠
+          </a>
+          <a href="#" class="nav-item" data-page="bosses">
+            <span class="nav-icon">⚔</span>
+            보스 체크
+          </a>
+        </nav>
+        <nav class="sidebar-nav general">
+          <span class="nav-label">GENERAL</span>
+          <a href="#" class="nav-item" data-page="settings">
+            <span class="nav-icon">⚙</span>
+            설정
+          </a>
+        </nav>
+        <div class="sidebar-download">
+          <p>목표 달성까지 화이팅!</p>
+          <button type="button" class="btn-download" disabled>앱 준비중</button>
+        </div>
+      </aside>
+
+      <div class="main-wrap">
+        <header class="header">
+          <div class="search-bar">
+            <span class="search-icon">⌕</span>
+            <input type="text" placeholder="검색 (기록, 보스)" id="search-input" />
+            <kbd>⌘F</kbd>
+          </div>
+          <div class="header-right">
+            <div class="user-info">
+              <span class="user-avatar">M</span>
+              <div class="user-detail">
+                <span class="user-name">메이플러</span>
+                <span class="user-email">maple@meso.local</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main class="dashboard">
+          <div class="page active" id="page-dashboard">
+            <div class="dashboard-head">
+              <div>
+                <h1>메이플 TODO</h1>
+                <p class="dashboard-desc">목표 메소와 수입·지출을 한눈에 관리하세요.</p>
+              </div>
+              <div class="head-actions">
+                <button type="button" class="btn btn-primary" id="btn-add-record">+ 수입/지출 추가</button>
+                <button type="button" class="btn btn-outline" id="btn-ahmae">아매획 수익 기록</button>
+              </div>
+            </div>
+
+            <div class="summary-cards">
+              <div class="card card-featured">
+                <div class="card-value" id="summary-current">0</div>
+                <div class="card-sub">보유 메소</div>
+                <div class="card-trend up"><span id="summary-ratio">0%</span> 목표 대비</div>
+              </div>
+              <div class="card">
+                <div class="card-value" id="summary-goal">0</div>
+                <div class="card-sub">목표 메소</div>
+              </div>
+              <div class="card">
+                <div class="card-value income" id="summary-month-income">0</div>
+                <div class="card-sub">이번달 수입</div>
+              </div>
+              <div class="card">
+                <div class="card-value expense" id="summary-month-expense">0</div>
+                <div class="card-sub">이번달 지출</div>
+              </div>
+            </div>
+
+            <div class="dashboard-grid">
+              <section class="panel chart-panel">
+                <h2>이번달 수입/지출</h2>
+                <div class="bar-chart-wrap" id="bar-chart-wrap"></div>
+              </section>
+              <section class="panel goal-panel">
+                <h2>목표 달성률</h2>
+                <div class="donut-wrap">
+                  <div class="donut" id="donut-chart">
+                    <span class="donut-value" id="donut-value">0%</span>
+                  </div>
+                  <div class="donut-legend">
+                    <span class="legend-item"><i class="dot current"></i> 보유</span>
+                    <span class="legend-item"><i class="dot remaining"></i> 남은 목표</span>
+                  </div>
+                </div>
+              </section>
+              <section class="panel reminders-panel">
+                <h2>빠른 기록</h2>
+                <div class="quick-ahmae">
+                  <input type="number" id="quick-ahmae-amount" placeholder="메소" min="0" />
+                  <input type="text" id="quick-ahmae-desc" placeholder="설명 (선택)" />
+                  <button type="button" class="btn btn-primary btn-sm" id="btn-quick-ahmae">아매획 기록</button>
+                </div>
+              </section>
+            </div>
+
+            <div class="dashboard-grid">
+              <section class="panel list-panel">
+                <div class="panel-head">
+                  <h2>메포 컨텐츠</h2>
+                  <button type="button" class="btn btn-sm btn-outline" id="btn-add-content">+ 추가</button>
+                </div>
+                <ul class="content-list" id="content-list"></ul>
+              </section>
+              <section class="panel list-panel wide">
+                <div class="panel-head">
+                  <h2>최근 수입/지출</h2>
+                </div>
+                <ul class="record-list" id="record-list"></ul>
+              </section>
+            </div>
+          </div>
+
+          <div class="page" id="page-records">
+            <div class="dashboard-head">
+              <h1>수입/지출 기록</h1>
+              <p class="dashboard-desc">이번달 내역을 확인하고 추가하세요.</p>
+            </div>
+            <section class="panel">
+              <div class="panel-head">
+                <h2>기록 추가</h2>
+              </div>
+              <form class="record-form" id="record-form">
+                <select id="record-type" name="type">
+                  <option value="income">수입</option>
+                  <option value="expense">지출</option>
+                </select>
+                <input type="number" id="record-amount" name="amount" placeholder="금액 (메소)" min="0" required />
+                <input type="text" id="record-desc" name="description" placeholder="설명" />
+                <button type="submit" class="btn btn-primary">추가</button>
+              </form>
+            </section>
+            <section class="panel">
+              <ul class="record-list full" id="record-list-page"></ul>
+            </section>
+          </div>
+
+          <div class="page" id="page-contents">
+            <div class="dashboard-head">
+              <h1>메포 컨텐츠</h1>
+              <p class="dashboard-desc">딸깍 시 해당 비용이 지출로 기록됩니다.</p>
+              <button type="button" class="btn btn-primary" id="btn-add-content-page">+ 컨텐츠 추가</button>
+            </div>
+            <ul class="content-list full" id="content-list-page"></ul>
+          </div>
+
+          <div class="page" id="page-bosses">
+            <div class="dashboard-head">
+              <h1>보스 체크</h1>
+              <p class="dashboard-desc">체크 시 수입으로 기록됩니다.</p>
+              <button type="button" class="btn btn-primary" id="btn-add-boss">+ 보스 추가</button>
+              <button type="button" class="btn btn-outline" id="btn-reset-bosses">주간 리셋</button>
+            </div>
+            <ul class="boss-list" id="boss-list"></ul>
+          </div>
+
+          <div class="page" id="page-settings">
+            <div class="dashboard-head">
+              <h1>설정</h1>
+              <p class="dashboard-desc">목표 금액과 보유 메소를 설정하세요.</p>
+            </div>
+            <section class="panel">
+              <form class="settings-form" id="settings-form">
+                <label>
+                  <span>목표 메소</span>
+                  <input type="number" id="settings-goal" min="0" placeholder="예: 100000000" />
+                </label>
+                <label>
+                  <span>현재 보유 메소</span>
+                  <input type="number" id="settings-current" min="0" placeholder="예: 35000000" />
+                </label>
+                <button type="submit" class="btn btn-primary">저장</button>
+              </form>
+            </section>
+          </div>
+        </main>
+      </div>
     </div>
+
+    <div class="modal" id="modal" aria-hidden="true">
+      <div class="modal-backdrop" data-close></div>
+      <div class="modal-box">
+        <div class="modal-head">
+          <h3 id="modal-title">제목</h3>
+          <button type="button" class="modal-close" data-close aria-label="닫기">×</button>
+        </div>
+        <div class="modal-body" id="modal-body"></div>
+      </div>
+    </div>
+
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

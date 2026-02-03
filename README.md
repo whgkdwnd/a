@@ -49,12 +49,14 @@ uvicorn main:app --reload
 1. 터미널 1: `cd backend && uvicorn main:app --reload`
 2. 터미널 2: `cd frontend && npm run dev`
 
-### Docker
+### Docker (한 번에 실행)
 
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
 
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- API 문서: http://localhost:8000/docs
+- **프론트엔드(메이플 TODO)**: http://localhost:3000
+- **백엔드 API**: http://localhost:8000
+- **API 문서**: http://localhost:8000/docs
+
+종료: `docker compose down`
