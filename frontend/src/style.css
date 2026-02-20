@@ -301,7 +301,34 @@ body {
 
 .head-actions {
   display: flex;
+  align-items: center;
   gap: 0.5rem;
+}
+
+.head-ahmae-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.head-ahmae-input label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.head-ahmae-input input {
+  width: 120px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.head-ahmae-input input::placeholder {
+  color: var(--text-muted);
 }
 
 /* Buttons */
@@ -431,6 +458,20 @@ body {
 
 .panel-head h2 {
   margin-bottom: 0;
+}
+
+.material-counter-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+.material-counter-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  min-width: 2ch;
+  text-align: center;
+  color: var(--text);
 }
 
 .list-panel.wide {
@@ -792,6 +833,45 @@ body {
 
 .boss-item .btn-check:not(:disabled):hover {
   background: var(--green-mid);
+}
+
+.boss-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.boss-item .btn-delete-boss {
+  font-size: 0.85rem;
+  padding: 0.4rem 0.75rem;
+}
+
+.boss-reorder {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.boss-item .btn-reorder {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.85rem;
+  line-height: 1;
+  min-width: 2rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.boss-item .btn-reorder:hover:not(:disabled) {
+  background: var(--bg-card);
+  border-color: var(--text-muted);
+}
+
+.boss-item .btn-reorder:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 /* Forms */

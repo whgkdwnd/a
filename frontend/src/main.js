@@ -1,23 +1,45 @@
-const API = '/api'
-
 function formatMeso(n) {
   if (n >= 1e8) return (n / 1e8).toFixed(1) + '억'
   if (n >= 1e4) return (n / 1e4).toFixed(0) + '만'
   return String(n)
 }
 
+/** Electron IPC로 엑셀 데이터 읽기/쓰기 */
 async function api(method, path, body) {
-  const opts = { method, headers: {} }
-  if (body) {
-    opts.headers['Content-Type'] = 'application/json'
-    opts.body = JSON.stringify(body)
+  const electron = typeof window !== 'undefined' && window.electronAPI
+  if (!electron) throw new Error('이 앱은 데스크톱 프로그램으로만 실행할 수 있습니다. (Electron)')
+  try {
+    if (method === 'GET' && path === '/goal-balance') return await electron.getGoalBalance()
+    if (method === 'PUT' && path === '/goal-balance') return await electron.updateGoalBalance(body)
+    if (method === 'GET' && path === '/material-settings') return await electron.getMaterialSettings()
+    if (method === 'PUT' && path === '/material-settings') return await electron.updateMaterialSettings(body)
+    if (method === 'GET' && path.startsWith('/records')) {
+      const q = path.includes('?') ? path.split('?')[1] : ''
+      const month = q ? new URLSearchParams(q).get('month') : null
+      return await electron.getRecords(month || null)
+    }
+    if (method === 'POST' && path === '/records') return await electron.createRecord(body)
+    if (method === 'DELETE' && path.startsWith('/records/')) {
+      const id = Number(path.replace(/^\/records\//, ''))
+      return await electron.deleteRecord(id)
+    }
+    if (method === 'GET' && path === '/contents') return await electron.getContents()
+    if (method === 'POST' && path === '/contents') return await electron.createContent(body)
+    if (method === 'POST' && path === '/contents/spend') return await electron.spendContent(body)
+    if (method === 'GET' && path === '/bosses') return await electron.getBosses()
+    if (method === 'POST' && path === '/bosses') return await electron.createBoss(body)
+    if (method === 'DELETE' && path.startsWith('/bosses/')) {
+      const id = Number(path.replace(/^\/bosses\//, ''))
+      return await electron.deleteBoss(id)
+    }
+    if (method === 'PUT' && path === '/bosses/reorder') return await electron.reorderBosses(body)
+    if (method === 'POST' && path === '/bosses/check') return await electron.checkBoss(body)
+    if (method === 'POST' && path === '/bosses/reset') return await electron.resetBosses()
+    if (method === 'POST' && path === '/ahmae') return await electron.recordAhmae(body)
+  } catch (e) {
+    throw new Error(e.message || '요청 실패')
   }
-  const res = await fetch(API + path, opts)
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.detail || res.statusText)
-  }
-  return res.json()
+  throw new Error('Unknown API: ' + method + ' ' + path)
 }
 
 const state = {
@@ -26,6 +48,8 @@ const state = {
   contents: [],
   bosses: [],
   currentMonth: new Date().toISOString().slice(0, 7),
+  bossEditMode: false,
+  materialSettings: { meso_per_run: 0, sol_erda_count: 0, sol_erda_price: 0, material_run_count: 0 },
 }
 
 function getMonth() {
@@ -56,11 +80,20 @@ async function loadBosses() {
   return state.bosses
 }
 
+async function loadMaterialSettings() {
+  state.materialSettings = await api('GET', '/material-settings')
+  return state.materialSettings
+}
+
 function renderSummary() {
   const g = state.goalBalance
   const monthRecords = state.records
-  const income = monthRecords.filter(r => r.type === 'income').reduce((s, r) => s + r.amount, 0)
+  let income = monthRecords.filter(r => r.type === 'income').reduce((s, r) => s + r.amount, 0)
   const expense = monthRecords.filter(r => r.type === 'expense').reduce((s, r) => s + r.amount, 0)
+
+  const m = state.materialSettings
+  const materialIncome = (Number(m.meso_per_run) + Number(m.sol_erda_count) * Number(m.sol_erda_price)) * Number(m.material_run_count)
+  income += materialIncome
 
   document.getElementById('summary-current').textContent = formatMeso(g.current_amount)
   document.getElementById('summary-goal').textContent = formatMeso(g.goal_amount)
@@ -69,12 +102,19 @@ function renderSummary() {
   document.getElementById('summary-month-expense').textContent = formatMeso(expense)
 }
 
+function renderMaterialCounter() {
+  const el = document.getElementById('material-counter-value')
+  if (el) el.textContent = state.materialSettings.material_run_count
+}
+
 function renderDonut() {
-  const ratio = Math.min(100, state.goalBalance.ratio_percent || 0)
+  const g = state.goalBalance
+  const ratio = Math.min(100, g.ratio_percent || 0)
   const deg = (ratio / 100) * 360
   const el = document.getElementById('donut-chart')
   if (el) {
     el.style.setProperty('--donut-deg', deg + 'deg')
+    el.setAttribute('title', `목표: ${formatMeso(g.goal_amount)}\n보유: ${formatMeso(g.current_amount)}`)
   }
   const valEl = document.getElementById('donut-value')
   if (valEl) valEl.textContent = ratio + '%'
@@ -223,23 +263,71 @@ function renderRecordList(containerId) {
 function renderBossList() {
   const list = document.getElementById('boss-list')
   if (!list) return
+  const editMode = state.bossEditMode
+  const editBtn = document.getElementById('btn-boss-edit-mode')
+  if (editBtn) editBtn.textContent = editMode ? '편집 완료' : '편집모드'
+
   if (state.bosses.length === 0) {
     list.innerHTML = '<li class="empty-msg">등록된 보스가 없습니다. + 보스 추가에서 등록하세요.</li>'
     return
   }
-  list.innerHTML = state.bosses.map(b => `
-    <li class="boss-item ${b.checked ? 'checked' : ''}" data-id="${b.id}">
+  list.innerHTML = state.bosses.map((b, index) => {
+    const isFirst = index === 0
+    const isLast = index === state.bosses.length - 1
+    return `
+    <li class="boss-item ${b.checked ? 'checked' : ''} ${editMode ? 'edit-mode' : ''}" data-id="${b.id}" data-index="${index}">
+      ${editMode ? `
+      <div class="boss-reorder">
+        <button type="button" class="btn-reorder btn-reorder-up" data-id="${b.id}" ${isFirst ? 'disabled' : ''} title="위로">↑</button>
+        <button type="button" class="btn-reorder btn-reorder-down" data-id="${b.id}" ${isLast ? 'disabled' : ''} title="아래로">↓</button>
+      </div>
+      ` : ''}
       <div>
         <div class="boss-name">${escapeHtml(b.name)}</div>
         <div class="boss-reward">보상 ${formatMeso(b.reward_amount)}</div>
       </div>
-      <button type="button" class="btn-check" data-id="${b.id}" ${b.checked ? 'disabled' : ''}>
-        ${b.checked ? '완료' : '체크'}
-      </button>
+      <div class="boss-item-actions">
+        ${editMode
+          ? `<button type="button" class="btn btn-outline btn-sm btn-delete-boss" data-id="${b.id}" title="삭제">삭제</button>`
+          : `
+        <button type="button" class="btn-check" data-id="${b.id}" ${b.checked ? 'disabled' : ''}>
+          ${b.checked ? '완료' : '체크'}
+        </button>
+        `}
+      </div>
     </li>
-  `).join('')
-  list.querySelectorAll('.btn-check:not([disabled])').forEach(btn => {
-    btn.addEventListener('click', () => checkBoss(Number(btn.dataset.id)))
+  `}).join('')
+
+}
+
+function setupBossListDelegation() {
+  const list = document.getElementById('boss-list')
+  if (!list) return
+  list.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-id]')
+    if (!btn) return
+    const id = Number(btn.dataset.id)
+    if (Number.isNaN(id)) return
+    if (btn.classList.contains('btn-check') && !btn.disabled) {
+      e.preventDefault()
+      checkBoss(id)
+      return
+    }
+    if (btn.classList.contains('btn-delete-boss')) {
+      e.preventDefault()
+      deleteBoss(id)
+      return
+    }
+    if (btn.classList.contains('btn-reorder-up') && !btn.disabled) {
+      e.preventDefault()
+      moveBoss(id, -1)
+      return
+    }
+    if (btn.classList.contains('btn-reorder-down') && !btn.disabled) {
+      e.preventDefault()
+      moveBoss(id, 1)
+      return
+    }
   })
 }
 
@@ -254,6 +342,7 @@ async function refreshDashboard() {
   await loadRecords()
   await loadContents()
   await loadBosses()
+  await loadMaterialSettings()
   renderSummary()
   renderDonut()
   renderBarChart()
@@ -262,6 +351,7 @@ async function refreshDashboard() {
   renderRecordList('record-list')
   renderRecordList('record-list-page')
   renderBossList()
+  renderMaterialCounter()
   const badge = document.getElementById('records-badge')
   if (badge) badge.textContent = state.records.length + '+'
 }
@@ -324,12 +414,42 @@ async function checkBoss(bossId) {
   }
 }
 
+async function deleteBoss(bossId) {
+  if (!confirm('이 보스를 삭제할까요?')) return
+  try {
+    await api('DELETE', `/bosses/${bossId}`)
+    await refreshDashboard()
+  } catch (e) {
+    alert(e.message)
+  }
+}
+
+async function moveBoss(bossId, delta) {
+  const idx = state.bosses.findIndex(b => b.id === bossId)
+  if (idx === -1) return
+  const newIdx = idx + delta
+  if (newIdx < 0 || newIdx >= state.bosses.length) return
+  const reordered = [...state.bosses]
+  const [item] = reordered.splice(idx, 1)
+  reordered.splice(newIdx, 0, item)
+  const orderedIds = reordered.map(b => b.id)
+  try {
+    await api('PUT', '/bosses/reorder', { ordered_ids: orderedIds })
+    state.bosses = reordered
+    renderBossList()
+  } catch (e) {
+    alert(e.message)
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+  setupBossListDelegation()
+
   try {
     await refreshDashboard()
   } catch (e) {
     console.error(e)
-    document.body.insertAdjacentHTML('beforeend', '<div style="position:fixed;bottom:1rem;right:1rem;background:#dc2626;color:white;padding:0.75rem 1rem;border-radius:8px;">백엔드 연결 실패. localhost:8000 확인하세요.</div>')
+    document.body.insertAdjacentHTML('beforeend', '<div style="position:fixed;bottom:1rem;right:1rem;background:#dc2626;color:white;padding:0.75rem 1rem;border-radius:8px;">데이터 로드 실패. ' + (e.message || '') + '</div>')
   }
 
   document.querySelectorAll('.nav-item[data-page]').forEach(item => {
@@ -348,6 +468,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (item.dataset.page === 'settings') {
         document.getElementById('settings-goal').value = state.goalBalance.goal_amount || ''
         document.getElementById('settings-current').value = state.goalBalance.current_amount || ''
+        const m = state.materialSettings
+        document.getElementById('settings-meso-per-run').value = m.meso_per_run ?? ''
+        document.getElementById('settings-sol-erda').value = m.sol_erda_count ?? ''
+        document.getElementById('settings-sol-erda-price').value = m.sol_erda_price ?? ''
       }
     })
   })
@@ -372,24 +496,64 @@ document.addEventListener('DOMContentLoaded', async () => {
     showPage('records')
   })
 
-  document.getElementById('quick-ahmae-amount').value = ''
-  document.getElementById('quick-ahmae-desc').value = ''
+  document.getElementById('quick-ahmae-amount') && (document.getElementById('quick-ahmae-amount').value = '')
+  document.getElementById('quick-ahmae-desc') && (document.getElementById('quick-ahmae-desc').value = '')
   document.getElementById('btn-quick-ahmae')?.addEventListener('click', async () => {
-    const amount = Number(document.getElementById('quick-ahmae-amount').value)
-    const desc = document.getElementById('quick-ahmae-desc').value.trim()
+    const amount = Number(document.getElementById('quick-ahmae-amount')?.value)
+    const desc = (document.getElementById('quick-ahmae-desc')?.value || '').trim()
     if (!amount || amount < 0) return
     try {
       await api('POST', '/ahmae', { amount, description: desc || '[아매획] 수익' })
-      document.getElementById('quick-ahmae-amount').value = ''
-      document.getElementById('quick-ahmae-desc').value = ''
+      document.getElementById('quick-ahmae-amount') && (document.getElementById('quick-ahmae-amount').value = '')
+      document.getElementById('quick-ahmae-desc') && (document.getElementById('quick-ahmae-desc').value = '')
       await refreshDashboard()
     } catch (err) {
       alert(err.message)
     }
   })
 
-  document.getElementById('btn-ahmae')?.addEventListener('click', () => {
-    document.getElementById('quick-ahmae-amount').focus()
+  document.getElementById('btn-material-plus')?.addEventListener('click', async () => {
+    const next = (state.materialSettings.material_run_count || 0) + 1
+    try {
+      await api('PUT', '/material-settings', { material_run_count: next })
+      state.materialSettings.material_run_count = next
+      renderMaterialCounter()
+      renderSummary()
+    } catch (err) {
+      alert(err.message)
+    }
+  })
+  document.getElementById('btn-material-minus')?.addEventListener('click', async () => {
+    const current = state.materialSettings.material_run_count || 0
+    const next = Math.max(0, current - 1)
+    try {
+      await api('PUT', '/material-settings', { material_run_count: next })
+      state.materialSettings.material_run_count = next
+      renderMaterialCounter()
+      renderSummary()
+    } catch (err) {
+      alert(err.message)
+    }
+  })
+
+  const ahmaeMesoInput = document.getElementById('ahmae-meso-input')
+  const submitAhmaeFromHead = async () => {
+    const amount = Number(ahmaeMesoInput?.value)
+    if (!amount || amount < 0) return
+    try {
+      await api('POST', '/ahmae', { amount, description: '[아매획] 수익' })
+      ahmaeMesoInput.value = ''
+      await refreshDashboard()
+    } catch (err) {
+      alert(err.message)
+    }
+  }
+  document.getElementById('btn-ahmae-submit')?.addEventListener('click', submitAhmaeFromHead)
+  ahmaeMesoInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      submitAhmaeFromHead()
+    }
   })
 
   function openContentModal() {
@@ -455,6 +619,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('btn-add-boss')?.addEventListener('click', openBossModal)
 
+  document.getElementById('btn-boss-edit-mode')?.addEventListener('click', () => {
+    state.bossEditMode = !state.bossEditMode
+    renderBossList()
+  })
+
   document.getElementById('btn-reset-bosses')?.addEventListener('click', async () => {
     if (!confirm('모든 보스 체크를 초기화할까요?')) return
     try {
@@ -478,6 +647,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       await loadGoalBalance()
       renderSummary()
       renderDonut()
+    } catch (err) {
+      alert(err.message)
+    }
+  })
+
+  document.getElementById('settings-material-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const mesoPerRun = document.getElementById('settings-meso-per-run').value
+    const solErda = document.getElementById('settings-sol-erda').value
+    const solErdaPrice = document.getElementById('settings-sol-erda-price').value
+    const body = {}
+    if (mesoPerRun !== '') body.meso_per_run = Number(mesoPerRun)
+    if (solErda !== '') body.sol_erda_count = Number(solErda)
+    if (solErdaPrice !== '') body.sol_erda_price = Number(solErdaPrice)
+    if (Object.keys(body).length === 0) return
+    try {
+      await api('PUT', '/material-settings', body)
+      await loadMaterialSettings()
+      renderSummary()
+      renderMaterialCounter()
     } catch (err) {
       alert(err.message)
     }

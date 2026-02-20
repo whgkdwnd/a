@@ -1,62 +1,39 @@
-# My Website
+# 메이플 TODO
 
-Vite 프론트엔드 + FastAPI 백엔드 프로젝트입니다.
+목표 메소와 수입·지출을 관리하는 **데스크톱 앱**입니다. 데이터는 로컬 엑셀 파일로 저장되며, 인터넷·DB 연결이 필요 없습니다.
 
 ## 프로젝트 구조
 
 ```
-├── frontend/       # Vite + HTML/CSS/JS
-│   ├── index.html
-│   ├── src/
-│   ├── public/
-│   ├── package.json
-│   └── Dockerfile
-├── backend/        # FastAPI
-│   ├── main.py
-│   ├── requirements.txt
-│   └── Dockerfile
-└── docker-compose.yml
+├── frontend/       # Vite + HTML/CSS/JS (UI)
+├── electron/       # 데스크톱 앱: main.js, preload.js (엑셀 읽기/쓰기)
+└── package.json    # Electron + .exe 빌드 (루트)
 ```
 
-## 시작하기
-
-### Frontend (Vite)
+## 실행 방법
 
 ```bash
-cd frontend
+# 루트에서
 npm install
 npm run dev
 ```
 
-- http://localhost:3000 에서 확인
-- `/api` 요청은 자동으로 백엔드(8000)로 프록시됨
+- **Vite 개발 서버**와 **Electron**이 동시에 실행됩니다.
+- **핫 리로드**: HTML/CSS/JS를 수정하면 Electron 창에 바로 반영됩니다. (저장 시 자동 새로고침)
+- 데이터 파일 위치: `%APPDATA%\메이플 TODO\data.xlsx` (Windows)
 
-### Backend (FastAPI)
-
-```bash
-cd backend
-python -m venv venv
-venv\Scripts\activate   # Windows
-pip install -r requirements.txt
-uvicorn main:app --reload
-```
-
-- API: http://localhost:8000
-- API 문서: http://localhost:8000/docs
-
-### 동시 실행
-
-1. 터미널 1: `cd backend && uvicorn main:app --reload`
-2. 터미널 2: `cd frontend && npm run dev`
-
-### Docker (한 번에 실행)
+## .exe 설치 파일 만들기
 
 ```bash
-docker compose up --build -d
+npm run build
 ```
 
-- **프론트엔드(메이플 TODO)**: http://localhost:3000
-- **백엔드 API**: http://localhost:8000
-- **API 문서**: http://localhost:8000/docs
+- 결과물: `release/` 폴더에 **메이플 TODO Setup 1.0.0.exe** 생성
+- 설치 후 실행하면 엑셀 파일로 자동 저장/로드됩니다.
 
-종료: `docker compose down`
+## 개발 시 참고
+
+- **`npm run dev`**(루트): Vite 서버 + Electron 동시 실행 → **핫 리로드**로 UI 수정 결과를 바로 확인할 수 있습니다.
+- Electron 창에서 개발자 도구(DevTools)가 자동으로 열리며, 콘솔/네트워크 확인이 가능합니다.
+
+

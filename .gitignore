@@ -3,7 +3,8 @@ node_modules
 
 # Build output
 dist
-
+release
+memo
 # Python
 __pycache__
 *.py[cod]

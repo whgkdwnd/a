@@ -30,7 +30,7 @@
           </a>
           <a href="#" class="nav-item" data-page="bosses">
             <span class="nav-icon">⚔</span>
-            보스 체크
+            보스
           </a>
         </nav>
         <nav class="sidebar-nav general">
@@ -40,30 +40,9 @@
             설정
           </a>
         </nav>
-        <div class="sidebar-download">
-          <p>목표 달성까지 화이팅!</p>
-          <button type="button" class="btn-download" disabled>앱 준비중</button>
-        </div>
       </aside>
 
       <div class="main-wrap">
-        <header class="header">
-          <div class="search-bar">
-            <span class="search-icon">⌕</span>
-            <input type="text" placeholder="검색 (기록, 보스)" id="search-input" />
-            <kbd>⌘F</kbd>
-          </div>
-          <div class="header-right">
-            <div class="user-info">
-              <span class="user-avatar">M</span>
-              <div class="user-detail">
-                <span class="user-name">메이플러</span>
-                <span class="user-email">maple@meso.local</span>
-              </div>
-            </div>
-          </div>
-        </header>
-
         <main class="dashboard">
           <div class="page active" id="page-dashboard">
             <div class="dashboard-head">
@@ -73,7 +52,11 @@
               </div>
               <div class="head-actions">
                 <button type="button" class="btn btn-primary" id="btn-add-record">+ 수입/지출 추가</button>
-                <button type="button" class="btn btn-outline" id="btn-ahmae">아매획 수익 기록</button>
+                <div class="head-ahmae-input">
+                  <label for="ahmae-meso-input">메소 포인트 값</label>
+                  <input type="number" id="ahmae-meso-input" placeholder="0" min="0" />
+                  <button type="button" class="btn btn-outline btn-sm" id="btn-ahmae-submit">기록</button>
+                </div>
               </div>
             </div>
 
@@ -115,11 +98,11 @@
                 </div>
               </section>
               <section class="panel reminders-panel">
-                <h2>빠른 기록</h2>
-                <div class="quick-ahmae">
-                  <input type="number" id="quick-ahmae-amount" placeholder="메소" min="0" />
-                  <input type="text" id="quick-ahmae-desc" placeholder="설명 (선택)" />
-                  <button type="button" class="btn btn-primary btn-sm" id="btn-quick-ahmae">아매획 기록</button>
+                <h2>소재획 횟수</h2>
+                <div class="material-counter-wrap">
+                  <button type="button" class="btn btn-outline btn-sm" id="btn-material-minus" title="감소">−</button>
+                  <span class="material-counter-value" id="material-counter-value">0</span>
+                  <button type="button" class="btn btn-outline btn-sm" id="btn-material-plus" title="증가">+</button>
                 </div>
               </section>
             </div>
@@ -176,9 +159,10 @@
 
           <div class="page" id="page-bosses">
             <div class="dashboard-head">
-              <h1>보스 체크</h1>
+              <h1>보스</h1>
               <p class="dashboard-desc">체크 시 수입으로 기록됩니다.</p>
               <button type="button" class="btn btn-primary" id="btn-add-boss">+ 보스 추가</button>
+              <button type="button" class="btn btn-outline" id="btn-boss-edit-mode">편집모드</button>
               <button type="button" class="btn btn-outline" id="btn-reset-bosses">주간 리셋</button>
             </div>
             <ul class="boss-list" id="boss-list"></ul>
@@ -198,6 +182,23 @@
                 <label>
                   <span>현재 보유 메소</span>
                   <input type="number" id="settings-current" min="0" placeholder="예: 35000000" />
+                </label>
+                <button type="submit" class="btn btn-primary">저장</button>
+              </form>
+            </section>
+            <section class="panel">
+              <form class="settings-form" id="settings-material-form">
+                <label>
+                  <span>1 소재획당 얻는 메소</span>
+                  <input type="number" id="settings-meso-per-run" min="0" placeholder="예: 500000" />
+                </label>
+                <label>
+                  <span>솔 에르다 조각 개수</span>
+                  <input type="number" id="settings-sol-erda" min="0" placeholder="예: 10" />
+                </label>
+                <label>
+                  <span>솔 에르다 조각 가격</span>
+                  <input type="number" id="settings-sol-erda-price" min="0" placeholder="예: 50000" />
                 </label>
                 <button type="submit" class="btn btn-primary">저장</button>
               </form>

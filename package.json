@@ -1,0 +1,41 @@
+{
+  "name": "maple-todo",
+  "version": "1.0.0",
+  "description": "메이플 TODO - 목표 메소와 수입·지출 관리",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "concurrently -k \"npm run dev:frontend\" \"npm run dev:electron\"",
+    "dev:frontend": "cd frontend && vite",
+    "dev:electron": "wait-on http://localhost:3000 && cross-env ELECTRON_DEV=1 electron .",
+    "build": "cd frontend && vite build && cd .. && electron-builder",
+    "build:win": "cd frontend && vite build && cd .. && electron-builder --win",
+    "start": "electron .",
+    "frontend:dev": "cd frontend && npm run dev"
+  },
+  "build": {
+    "appId": "com.mapletodo.app",
+    "productName": "메이플 TODO",
+    "forceCodeSigning": false,
+    "directories": { "output": "release" },
+    "files": ["electron/**", "frontend/dist/**"],
+    "win": {
+      "target": "nsis",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "vite": "^5.4.0",
+    "wait-on": "^7.2.0"
+  }
+}
